@@ -200,6 +200,11 @@ def create_app() -> Flask:
             connection.commit()
         return jsonify({"ok": True, "status": "opened_in_whatsapp"})
 
+    @app.get("/api/tools")
+    def get_tools():
+        from .tools import public_tool_catalog
+        return jsonify({"tools": public_tool_catalog()})
+
     @app.get("/api/settings")
     def settings():
         configured = bool(os.getenv("AI_BASE_URL", "").strip() and
