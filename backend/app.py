@@ -250,7 +250,7 @@ def create_app() -> Flask:
         return jsonify({"history": [dict(row) for row in rows]})
 
     @app.post("/api/drafts/<int:draft_id>/clicked")
-    def mark_draft_opened(draft_id: int):
+    def mark_draft_link_clicked(draft_id: int):
         with db_session() as connection:
             row = connection.execute(
                 "SELECT recipient_name, status FROM drafts WHERE id = ?", (draft_id,)
@@ -263,8 +263,8 @@ def create_app() -> Flask:
                 )
                 connection.execute(
                     "INSERT INTO history(action, summary, status) VALUES (?, ?, ?)",
-                    ("whatsapp.open", f"Se solicitó abrir el enlace de WhatsApp para {row['recipient_name']}; envío no verificado.",
-                     "opened"),
+                    ("whatsapp.link_click", f"Se hizo clic en el enlace de WhatsApp para {row['recipient_name']}; envío no verificado.",
+                     "clicked"),
                 )
                 connection.commit()
         return jsonify({"ok": True, "status": "link_clicked",
