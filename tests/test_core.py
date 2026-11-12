@@ -14,9 +14,10 @@ class CoreTests(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         os.environ["WA_BRIDGE_DB"] = os.path.join(self.temp_dir.name, "test.db")
-        os.environ.pop("AI_BASE_URL", None)
-        os.environ.pop("AI_MODEL", None)
-        os.environ.pop("AI_API_KEY", None)
+        # Empty values prevent a developer .env file from making tests call a remote provider.
+        os.environ["AI_BASE_URL"] = ""
+        os.environ["AI_MODEL"] = ""
+        os.environ["AI_API_KEY"] = ""
         self.app = create_app()
         self.app.config.update(TESTING=True)
         self.client = self.app.test_client()
@@ -24,6 +25,9 @@ class CoreTests(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
         os.environ.pop("WA_BRIDGE_DB", None)
+        os.environ.pop("AI_BASE_URL", None)
+        os.environ.pop("AI_MODEL", None)
+        os.environ.pop("AI_API_KEY", None)
 
     def test_normalize_phone(self):
         self.assertEqual(normalize_phone("+54 9 351 123-4567"), "5493511234567")
