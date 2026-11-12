@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
@@ -42,8 +43,8 @@ def main() -> int:
     created = False
 
     try:
-        with sqlite3.connect(source, timeout=10) as src:
-            with sqlite3.connect(destination) as dst:
+        with closing(sqlite3.connect(source, timeout=10)) as src:
+            with closing(sqlite3.connect(destination)) as dst:
                 created = True
                 src.backup(dst)
                 check = dst.execute("PRAGMA integrity_check").fetchone()
