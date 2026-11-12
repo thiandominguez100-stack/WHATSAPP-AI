@@ -39,14 +39,15 @@ if ($venvExists) {
 }
 
 $envFile = Join-Path $PSScriptRoot ".env"
-Check-Result "Configuración .env" (Test-Path $envFile) "Se busca .env; sus valores nunca se muestran."
+$envExists = Test-Path $envFile
+Check-Result "Configuración .env" $envExists "Se busca .env; sus valores nunca se muestran."
 
 $ollama = Get-Command ollama -ErrorAction SilentlyContinue
 if ($ollama) {
     $modelList = & ollama list 2>&1 | Out-String
     $ollamaOk = $LASTEXITCODE -eq 0
     Check-Result "Ollama CLI" $ollamaOk "Se pudo consultar ollama list."
-    $modelOk = $ollamaOk -and ($modelList -match "(?m)^qwen2\.5:1\.5b(\s|$)")
+    $modelOk = $ollamaOk -and ($modelList -match "qwen2\.5:1\.5b")
     Check-Result "Modelo Qwen 2.5 1.5B" $modelOk "Se busca el modelo existente; no se descarga automáticamente."
 } else {
     Check-Result "Ollama CLI" $false "No se encontró ollama en PATH."
@@ -61,36 +62,25 @@ try {
 }
 
 $portToCheck = 5000
-if ($env:PORT -match '^\d+
-
-Write-Host ""
-if ($script:failed) {
-    Write-Host "Diagnóstico terminado: hay requisitos pendientes. Revisa las líneas [FALTA]." -ForegroundColor Yellow
-    exit 1
-} else {
-    Write-Host "Diagnóstico terminado: todas las comprobaciones pasaron." -ForegroundColor Green
-    exit 0
-}
-) {
-    $portToCheck = [int]$env:PORT
-} elseif (Test-Path $envFile) {
-    $portLine = Select-String -Path $envFile -Pattern '^\s*PORT\s*=\s*(\d+)\s*
-
-Write-Host ""
-if ($script:failed) {
-    Write-Host "Diagnóstico terminado: hay requisitos pendientes. Revisa las líneas [FALTA]." -ForegroundColor Yellow
-    exit 1
-} else {
-    Write-Host "Diagnóstico terminado: todas las comprobaciones pasaron." -ForegroundColor Green
-    exit 0
-}
- | Select-Object -First 1
-    if ($portLine -and $portLine.Matches[0].Groups[1].Success) {
-        $portToCheck = [int]$portLine.Matches[0].Groups[1].Value
+$portRaw = $env:PORT
+if (-not $portRaw -and $envExists) {
+    $portLine = Get-Content $envFile | Where-Object { $_ -match '^\s*PORT\s*=' } | Select-Object -First 1
+    if ($portLine) {
+        $parts = $portLine -split '=', 2
+        if ($parts.Count -eq 2) { $portRaw = $parts[1].Trim() }
     }
 }
+if ($portRaw) {
+    $parsedPort = 0
+    if ([int]::TryParse($portRaw, [ref]$parsedPort)) {
+        $portToCheck = $parsedPort
+    } else {
+        $portToCheck = 0
+    }
+}
+
 if ($portToCheck -lt 1 -or $portToCheck -gt 65535) {
-    Check-Result "Puerto configurado" $false "PORT debe estar entre 1 y 65535."
+    Check-Result "Puerto configurado" $false "PORT debe ser un entero entre 1 y 65535."
 } else {
     $tcpCommand = Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue
     if ($tcpCommand) {
@@ -103,7 +93,8 @@ if ($portToCheck -lt 1 -or $portToCheck -gt 65535) {
         }
     } else {
         $netstat = netstat -ano -p tcp 2>$null | Out-String
-        $portInUse = $netstat -match "(?m)^\s*TCP\s+\S+:$portToCheck\s+\S+\s+LISTENING\s+"
+        $portPattern = ":\s*$portToCheck\s"
+        $portInUse = $netstat -match "(?m)^\s*TCP\s+\S+$portPattern\S+\s+LISTENING\s+"
         Check-Result "Puerto $portToCheck libre" (-not $portInUse) "Comprobación mediante netstat."
     }
 }
