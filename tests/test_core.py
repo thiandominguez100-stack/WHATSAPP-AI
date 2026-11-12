@@ -1,6 +1,8 @@
 """Regression and security tests for WA-Bridge AI."""
 from __future__ import annotations
 
+import io
+import json
 import os
 import sqlite3
 import tempfile
@@ -257,6 +259,30 @@ class CoreTests(unittest.TestCase):
                     "https://user:pass@example.com", "https://example.com/?token=x"):
             with self.subTest(url=url), self.assertRaises(ValueError):
                 _endpoint(url)
+
+    def test_provider_parses_valid_intent_and_bounds_output(self):
+        response_body = {
+            "choices": [{
+                "message": {
+                    "content": json.dumps({
+                        "intent": "create_task",
+                        "title": "Repasar ciencias",
+                        "due_text": "mañana",
+                    })
+                }
+            }]
+        }
+        fake_response = io.BytesIO(json.dumps(response_body).encode("utf-8"))
+        with patch.dict(os.environ, {
+            "AI_BASE_URL": "http://127.0.0.1:11434/v1",
+            "AI_MODEL": "qwen2.5:1.5b",
+            "AI_API_KEY": "ollama",
+        }), patch("backend.ai_provider.urllib.request.urlopen", return_value=fake_response) as opener:
+            result = interpret_with_provider("recordame repasar ciencias")
+        self.assertEqual(result["intent"], "create_task")
+        self.assertEqual(result["title"], "Repasar ciencias")
+        request_payload = json.loads(opener.call_args.args[0].data.decode("utf-8"))
+        self.assertEqual(request_payload["max_tokens"], 300)
 
     def test_invalid_provider_configuration_falls_back_without_crashing(self):
         with patch.dict(os.environ, {"AI_BASE_URL": "ftp://bad-host", "AI_MODEL": "test"}):
