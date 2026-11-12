@@ -181,7 +181,7 @@ class CoreTests(unittest.TestCase):
         self.assertFalse(first.get_json()["message_sent"])
         self.assertEqual(second.status_code, 200)
         history = self.client.get("/api/history").get_json()["history"]
-        self.assertEqual(sum(item["action"] == "whatsapp.open" for item in history), 1)
+        self.assertEqual(sum(item["action"] == "whatsapp.link_click" for item in history), 1)
 
     def test_missing_draft_returns_404(self):
         self.assertEqual(self.client.post("/api/drafts/999/clicked", json={}).status_code, 404)
