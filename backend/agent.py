@@ -14,12 +14,12 @@ from .tools import is_allowed_intent
 MESSAGE_PATTERN = re.compile(
     r"^(?:prepara|prepar[aá]me|redacta|escribe|arma|manda|mand[aá]le|env[ií]a|env[ií]ale)"
     r"\s+(?:un\s+)?mensaje\s+(?:para|a)\s+(.+?)\s+"
-    r"(?:diciendole|diciendo(?:le)?(?:\s+que)?|que\s+diga|con\s+el\s+texto)\s+(.+)$",
+    r"(?:dici[eé]ndole|diciendo(?:le)?(?:\s+que)?|que\s+diga|con\s+el\s+texto)\s+(.+)$",
     re.IGNORECASE,
 )
 TASK_PATTERN = re.compile(
     r"^(?:crear|crea|agregar|agrega|anotar|anota|recordame|recu[eé]rdame|programa)"
-    r"\s+(?:una\s+)?(?:tarea|recordatorio)\s*(?:de|para|:)??\s*(.+)$",
+    r"\s+(?:una\s+)?(?:tarea|recordatorio)\s*(?:(?:de|para)\s+|:\s*)?(.+)$",
     re.IGNORECASE,
 )
 
