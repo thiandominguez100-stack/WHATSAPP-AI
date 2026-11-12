@@ -2,7 +2,7 @@
 
 Asistente web **personal y local** para trabajar únicamente con el WhatsApp del propietario del equipo. No tendrá registro público ni cuentas para terceros.
 
-> Estado: MVP local. La aplicación prepara borradores y abre conversaciones mediante enlaces oficiales \`wa.me\`; el usuario revisa y confirma el envío. Esta versión no automatiza WhatsApp Web ni lee conversaciones privadas.
+> Estado: MVP local. La aplicación prepara borradores y abre conversaciones mediante enlaces oficiales `wa.me`; el usuario revisa y confirma el envío. Esta versión no automatiza WhatsApp Web ni lee conversaciones privadas.
 
 ## Alcance: fases 1 a 5
 
@@ -17,7 +17,7 @@ La integración con una cuenta real de WhatsApp queda fuera de estas cinco fases
 ## Funciones actuales
 
 - Chat en español con intérprete local y adaptador compatible con OpenAI Chat Completions.
-- Configuración para Ollama local con \`qwen2.5:1.5b\`.
+- Configuración para Ollama local con `qwen2.5:1.5b`.
 - Contactos, borradores, tareas e historial en SQLite.
 - Catálogo de herramientas permitidas; el modelo no ejecuta código arbitrario.
 - Enlaces oficiales para abrir WhatsApp y revisar manualmente el borrador.
@@ -26,37 +26,37 @@ La integración con una cuenta real de WhatsApp queda fuera de estas cinco fases
 
 - Windows 10/11 y Python 3.10 o superior.
 - Git para clonar el repositorio.
-- Ollama instalado y el modelo \`qwen2.5:1.5b\` descargado.
+- Ollama instalado y el modelo `qwen2.5:1.5b` descargado.
 - No se necesita volver a descargar el modelo si ya está instalado.
 
 ## Instalación en Windows
 
 Abre PowerShell y ejecuta:
 
-\`\`\`powershell
+```powershell
 git clone https://github.com/thiandominguez100-stack/WHATSAPP-AI.git
 cd WHATSAPP-AI
 Set-ExecutionPolicy -Scope Process Bypass
 .\setup_windows.ps1
-\`\`\`
+```
 
-El instalador crea el entorno virtual, instala dependencias y crea \`.env\` solo si todavía no existe. No sobrescribe tu configuración ni descarga modelos de Ollama.
+El instalador crea el entorno virtual, instala dependencias y crea `.env` solo si todavía no existe. No sobrescribe tu configuración ni descarga modelos de Ollama.
 
 Antes de iniciar, puedes ejecutar el diagnóstico:
 
-\`\`\`powershell
+```powershell
 .\doctor_windows.ps1
-\`\`\`
+```
 
 Después inicia la aplicación:
 
-\`\`\`powershell
+```powershell
 .\run_windows.ps1
-\`\`\`
+```
 
-Abre manualmente http://127.0.0.1:5000. Mantén abierta la ventana de PowerShell mientras uses la aplicación. Para detener el servidor, pulsa \`Ctrl+C\`.
+Abre manualmente http://127.0.0.1:5000. Mantén abierta la ventana de PowerShell mientras uses la aplicación. Para detener el servidor, pulsa `Ctrl+C`.
 
-Ollama debe estar ejecutándose en \`http://127.0.0.1:11434\`. Comprueba el modelo con \`ollama list\`.
+Ollama debe estar ejecutándose en `http://127.0.0.1:11434`. Comprueba el modelo con `ollama list`.
 
 La guía detallada está en [docs/ANTES_DE_INSTALAR.md](docs/ANTES_DE_INSTALAR.md).
 
@@ -64,11 +64,11 @@ La guía detallada está en [docs/ANTES_DE_INSTALAR.md](docs/ANTES_DE_INSTALAR.m
 
 Para crear una copia consistente de la base SQLite mientras la aplicación puede estar en uso:
 
-\`\`\`powershell
+```powershell
 .\backup_windows.ps1
-\`\`\`
+```
 
-Las copias quedan en \`backups\`, carpeta excluida de Git. Pueden contener datos personales: no las publiques ni las compartas.
+Las copias quedan en `backups`, carpeta excluida de Git. Pueden contener datos personales: no las publiques ni las compartas.
 
 ## Seguridad y privacidad
 
@@ -84,9 +84,9 @@ Objetivo inicial: mantener el proyecto y sus datos por debajo de 10 GB; ampliar 
 
 ## Pruebas
 
-\`\`\`powershell
+```powershell
 .\.venv\Scripts\python.exe -m unittest discover -v
-\`\`\`
+```
 
 También puedes comprobar el estado local en http://127.0.0.1:5000/api/health. GitHub Actions ejecuta las pruebas al actualizar la rama principal o abrir un pull request.
 
