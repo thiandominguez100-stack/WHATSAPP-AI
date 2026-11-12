@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import os
+import sqlite3
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from backend.agent import _find_contact
@@ -12,6 +14,7 @@ from backend.app import create_app
 from backend.database import db_session
 from backend.security import clean_text, normalize_phone
 from backend.whatsapp import build_whatsapp_link
+from scripts import backup_db
 
 
 class CoreTests(unittest.TestCase):
@@ -236,6 +239,33 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(settings["provider_is_local"])
         self.assertEqual(settings["model"], "qwen2.5:1.5b")
 
+
+
+    def test_settings_survive_malformed_provider_url(self):
+        with patch.dict(os.environ, {
+            "AI_BASE_URL": "http://[malformed",
+            "AI_MODEL": "test",
+        }):
+            response = self.client.get("/api/settings")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.get_json()["provider_is_local"])
+
+    def test_backup_creates_integrity_checked_copy(self):
+        backup_root = Path(self.temp_dir.name) / "project"
+        backup_root.mkdir()
+        with patch.object(backup_db, "ROOT", backup_root):
+            result = backup_db.main()
+        self.assertEqual(result, 0)
+        backup_files = list((backup_root / "backups").glob("wa_bridge_*.db"))
+        self.assertEqual(len(backup_files), 1)
+        with sqlite3.connect(backup_files[0]) as connection:
+            self.assertEqual(connection.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+            tables = {
+                row[0] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )
+            }
+        self.assertTrue({"contacts", "drafts", "tasks", "history"}.issubset(tables))
 
 if __name__ == "__main__":
     unittest.main()
