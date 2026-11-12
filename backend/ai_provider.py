@@ -61,6 +61,7 @@ def interpret_with_provider(user_text: str) -> dict[str, Any] | None:
         payload = {
             "model": model,
             "temperature": 0,
+            "max_tokens": 300,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_text[:1500]},
