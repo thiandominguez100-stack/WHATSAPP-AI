@@ -18,7 +18,9 @@ La integración con una cuenta real de WhatsApp queda fuera de estas cinco fases
 
 - Chat en español con intérprete local y adaptador compatible con OpenAI Chat Completions.
 - Configuración para Ollama local con `qwen2.5:1.5b`.
-- Contactos, borradores, tareas e historial en SQLite.
+- Contactos, borradores recuperables, tareas e historial en SQLite.
+- Coincidencia exacta de nombres para preparar mensajes; los nombres duplicados requieren desambiguación.
+- API restringida a loopback y comprobación de origen para operaciones que modifican datos.
 - Catálogo de herramientas permitidas; el modelo no ejecuta código arbitrario.
 - Enlaces oficiales para abrir WhatsApp y revisar manualmente el borrador.
 
@@ -42,7 +44,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 El instalador crea el entorno virtual, instala dependencias y crea `.env` solo si todavía no existe. No sobrescribe tu configuración ni descarga modelos de Ollama.
 
-Antes de iniciar, puedes ejecutar el diagnóstico:
+Antes de iniciar, ejecuta el diagnóstico (el proceso devuelve código distinto de cero si falta algún requisito):
 
 ```powershell
 .\doctor_windows.ps1
@@ -88,7 +90,7 @@ Objetivo inicial: mantener el proyecto y sus datos por debajo de 10 GB; ampliar 
 .\.venv\Scripts\python.exe -m unittest discover -v
 ```
 
-También puedes comprobar el estado local en http://127.0.0.1:5000/api/health. GitHub Actions ejecuta las pruebas al actualizar la rama principal o abrir un pull request.
+También puedes comprobar el estado local en http://127.0.0.1:5000/api/health. GitHub Actions compila Python y valida JavaScript y scripts PowerShell; ejecuta pruebas en Python 3.10, 3.11, 3.12 y 3.13.
 
 ## Estado
 
