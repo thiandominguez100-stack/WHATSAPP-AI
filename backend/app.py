@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, render_template, request
 
 from .agent import handle_message
+from .ai_provider import _endpoint
 from .database import db_session, init_db
 from .security import clean_text, normalize_phone
 
@@ -74,6 +75,9 @@ def create_app() -> Flask:
         if not _is_loopback_address(request.remote_addr):
             abort(403, description="Conexión remota bloqueada.")
         if request.method in _MUTATING_METHODS:
+            fetch_site = request.headers.get("Sec-Fetch-Site")
+            if fetch_site and fetch_site not in {"same-origin", "none"}:
+                abort(403, description="Solicitud de otro sitio bloqueada.")
             origin = request.headers.get("Origin")
             if origin and not _same_origin(origin, request.host_url):
                 abort(403, description="Solicitud de otro origen bloqueada.")
@@ -275,16 +279,20 @@ def create_app() -> Flask:
     def settings():
         base_url = os.getenv("AI_BASE_URL", "").strip()
         model = os.getenv("AI_MODEL", "").strip()
-        provider_configured = bool(base_url and model)
-        try:
-            parsed = urlsplit(base_url) if base_url else None
-            provider_is_local = bool(
-                parsed and parsed.scheme == "http"
-                and parsed.hostname in {"127.0.0.1", "localhost", "::1"}
-                and parsed.username is None and parsed.password is None
-            )
-        except ValueError:
-            provider_is_local = False
+        provider_is_local = False
+        endpoint_valid = False
+        if base_url:
+            try:
+                _endpoint(base_url)
+                endpoint_valid = True
+                parsed = urlsplit(base_url)
+                provider_is_local = bool(
+                    parsed.scheme == "http"
+                    and parsed.hostname in {"127.0.0.1", "localhost", "::1"}
+                )
+            except ValueError:
+                endpoint_valid = False
+        provider_configured = bool(endpoint_valid and model)
         return jsonify({
             "provider_configured": provider_configured,
             "provider_mode": "ollama_local" if provider_is_local else (
