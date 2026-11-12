@@ -109,6 +109,14 @@ requirements.txt
 .gitignore
 ```
 
+## Ejecutar pruebas
+
+```bash
+python -m unittest discover -v
+```
+
+También se ejecutan automáticamente en GitHub Actions al actualizar `main` o abrir un pull request.
+
 ## Próximas etapas
 
 1. Conectar un proveedor de IA compatible y configurable, sin atar el proyecto a una sola marca.
