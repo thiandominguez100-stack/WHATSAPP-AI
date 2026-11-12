@@ -145,7 +145,7 @@ def create_app() -> Flask:
                 ).fetchone()
                 connection.commit()
             return jsonify({"contact": dict(row)}), 201
-        except ValueError as exc:
+        except (TypeError, ValueError) as exc:
             return jsonify({"error": str(exc)}), 400
         except sqlite3.IntegrityError:
             return jsonify({"error": "Ese número ya está registrado."}), 409
