@@ -1,13 +1,15 @@
 """Flask application and HTTP API."""
 from __future__ import annotations
 
+import ipaddress
 import os
 import sqlite3
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, abort, jsonify, render_template, request
 
 from .agent import handle_message
 from .database import db_session, init_db
@@ -15,11 +17,46 @@ from .security import clean_text, normalize_phone
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+_MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 
 def _body() -> dict[str, Any]:
     value = request.get_json(silent=True)
     return value if isinstance(value, dict) else {}
+
+
+def _is_loopback_address(value: str | None) -> bool:
+    if not value:
+        return False
+    try:
+        return ipaddress.ip_address(value).is_loopback
+    except ValueError:
+        return False
+
+
+def _is_local_host(value: str) -> bool:
+    try:
+        host = urlsplit("//" + value).hostname
+    except ValueError:
+        return False
+    return bool(host and host.lower() in _LOCAL_HOSTS)
+
+
+def _same_origin(origin: str, host_url: str) -> bool:
+    try:
+        supplied = urlsplit(origin)
+        expected = urlsplit(host_url)
+        return (
+            supplied.scheme in {"http", "https"}
+            and supplied.scheme == expected.scheme
+            and supplied.hostname == expected.hostname
+            and supplied.port == expected.port
+            and supplied.username is None
+            and supplied.password is None
+        )
+    except ValueError:
+        return False
 
 
 def create_app() -> Flask:
@@ -29,14 +66,29 @@ def create_app() -> Flask:
 
     init_db()
 
+    @app.before_request
+    def enforce_local_access():
+        # This app has no login system; it must remain reachable only from this PC.
+        if not _is_local_host(request.host):
+            abort(403, description="WA-Bridge AI solo acepta conexiones locales.")
+        if not _is_loopback_address(request.remote_addr):
+            abort(403, description="Conexión remota bloqueada.")
+        if request.method in _MUTATING_METHODS:
+            origin = request.headers.get("Origin")
+            if origin and not _same_origin(origin, request.host_url):
+                abort(403, description="Solicitud de otro origen bloqueada.")
+
     @app.after_request
     def add_security_headers(response):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Cache-Control"] = "no-store"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; script-src 'self'; style-src 'self'; "
-            "img-src 'self' data:; base-uri 'self'; frame-ancestors 'none'"
+            "img-src 'self' data:; base-uri 'self'; frame-ancestors 'none'; "
+            "form-action 'self'; object-src 'none'"
         )
         return response
 
@@ -116,7 +168,7 @@ def create_app() -> Flask:
             rows = connection.execute(
                 """SELECT id, title, due_text, status, created_at, completed_at
                    FROM tasks ORDER BY CASE status WHEN 'pending' THEN 0 ELSE 1 END,
-                   id DESC"""
+                   id DESC LIMIT 200"""
             ).fetchall()
         return jsonify({"tasks": [dict(row) for row in rows]})
 
@@ -128,7 +180,9 @@ def create_app() -> Flask:
             due_text_raw = body.get("due_text", "")
             if not isinstance(due_text_raw, str):
                 raise ValueError("La fecha debe ser texto.")
-            due_text = due_text_raw.strip()[:100]
+            due_text = due_text_raw.strip()
+            if len(due_text) > 100:
+                raise ValueError("La fecha o nota no puede superar 100 caracteres.")
             with db_session() as connection:
                 cursor = connection.execute(
                     "INSERT INTO tasks(title, due_text) VALUES (?, ?)", (title, due_text)
@@ -154,10 +208,12 @@ def create_app() -> Flask:
             return jsonify({"error": "Estado no válido."}), 400
         with db_session() as connection:
             row = connection.execute(
-                "SELECT title FROM tasks WHERE id = ?", (task_id,)
+                "SELECT title, status FROM tasks WHERE id = ?", (task_id,)
             ).fetchone()
             if row is None:
                 return jsonify({"error": "Tarea no encontrada."}), 404
+            if row["status"] == status:
+                return jsonify({"ok": True, "status": status, "changed": False})
             connection.execute(
                 """UPDATE tasks SET status = ?,
                    completed_at = CASE WHEN ? = 'completed' THEN CURRENT_TIMESTAMP ELSE NULL END
@@ -169,7 +225,16 @@ def create_app() -> Flask:
                 ("task.update", f"Tarea actualizada: {row['title']} → {status}"),
             )
             connection.commit()
-        return jsonify({"ok": True, "status": status})
+        return jsonify({"ok": True, "status": status, "changed": True})
+
+    @app.get("/api/drafts")
+    def get_drafts():
+        with db_session() as connection:
+            rows = connection.execute(
+                """SELECT id, recipient_name, phone, message, status, created_at
+                   FROM drafts ORDER BY id DESC LIMIT 100"""
+            ).fetchall()
+        return jsonify({"drafts": [dict(row) for row in rows]})
 
     @app.get("/api/history")
     def get_history():
@@ -184,21 +249,22 @@ def create_app() -> Flask:
     def mark_draft_opened(draft_id: int):
         with db_session() as connection:
             row = connection.execute(
-                "SELECT recipient_name FROM drafts WHERE id = ?", (draft_id,)
+                "SELECT recipient_name, status FROM drafts WHERE id = ?", (draft_id,)
             ).fetchone()
             if row is None:
                 return jsonify({"error": "Borrador no encontrado."}), 404
-            # This means the link was opened, not that a message was sent.
-            connection.execute(
-                "UPDATE drafts SET status = 'opened_in_whatsapp' WHERE id = ?", (draft_id,)
-            )
-            connection.execute(
-                "INSERT INTO history(action, summary, status) VALUES (?, ?, ?)",
-                ("whatsapp.open", f"Se abrió WhatsApp para {row['recipient_name']}; envío no verificado.",
-                 "opened"),
-            )
-            connection.commit()
-        return jsonify({"ok": True, "status": "opened_in_whatsapp"})
+            if row["status"] != "opened_in_whatsapp":
+                connection.execute(
+                    "UPDATE drafts SET status = 'opened_in_whatsapp' WHERE id = ?", (draft_id,)
+                )
+                connection.execute(
+                    "INSERT INTO history(action, summary, status) VALUES (?, ?, ?)",
+                    ("whatsapp.open", f"Se abrió WhatsApp para {row['recipient_name']}; envío no verificado.",
+                     "opened"),
+                )
+                connection.commit()
+        return jsonify({"ok": True, "status": "opened_in_whatsapp",
+                        "message_sent": False})
 
     @app.get("/api/tools")
     def get_tools():
@@ -207,16 +273,30 @@ def create_app() -> Flask:
 
     @app.get("/api/settings")
     def settings():
-        configured = bool(os.getenv("AI_BASE_URL", "").strip() and
-                          os.getenv("AI_MODEL", "").strip())
+        base_url = os.getenv("AI_BASE_URL", "").strip()
+        model = os.getenv("AI_MODEL", "").strip()
+        parsed = urlsplit(base_url) if base_url else None
+        provider_configured = bool(base_url and model)
+        provider_is_local = bool(
+            parsed and parsed.scheme == "http"
+            and parsed.hostname in {"127.0.0.1", "localhost", "::1"}
+        )
         return jsonify({
-            "provider_configured": configured,
-            "provider_mode": "compatible_api" if configured else "local_parser",
+            "provider_configured": provider_configured,
+            "provider_mode": "ollama_local" if provider_is_local else (
+                "compatible_api" if provider_configured else "local_parser"
+            ),
+            "provider_is_local": provider_is_local,
+            "model": model if provider_configured else None,
             "api_key_present": bool(os.getenv("AI_API_KEY", "").strip()),
         })
 
     @app.errorhandler(413)
     def request_too_large(_error):
         return jsonify({"error": "La solicitud es demasiado grande."}), 413
+
+    @app.errorhandler(403)
+    def forbidden(error):
+        return jsonify({"error": getattr(error, "description", "Acceso bloqueado.")}), 403
 
     return app
