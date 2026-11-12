@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -25,8 +26,22 @@ def connect_db() -> sqlite3.Connection:
     return connection
 
 
+@contextmanager
+def db_session():
+    """Open a connection and always commit/close it safely."""
+    connection = connect_db()
+    try:
+        yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
 def init_db() -> None:
-    with connect_db() as connection:
+    with db_session() as connection:
         connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS contacts (
