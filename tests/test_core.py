@@ -195,6 +195,8 @@ class CoreTests(unittest.TestCase):
 
     def test_reject_invalid_contact_and_chat_payloads(self):
         self.assertEqual(self.client.post("/api/contacts", json={"name": "", "phone": "5493511234567"}).status_code, 400)
+        self.assertEqual(self.client.post("/api/contacts", json={"name": 123, "phone": "5493511234567"}).status_code, 400)
+        self.assertEqual(self.client.post("/api/contacts", json={"name": "Ana", "phone": 123}).status_code, 400)
         self.assertEqual(self.client.post("/api/chat", json={"message": 123}).status_code, 400)
         self.assertEqual(self.client.post("/api/chat", json={}).status_code, 400)
 
