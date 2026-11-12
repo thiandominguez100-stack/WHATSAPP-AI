@@ -11,8 +11,8 @@ from urllib.parse import urlsplit
 from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, render_template, request
 
-from .agent import handle_message
 from .ai_provider import _endpoint
+from .agent import handle_message
 from .database import db_session, init_db
 from .security import clean_text, normalize_phone
 
@@ -114,7 +114,7 @@ def create_app() -> Flask:
             with db_session() as connection:
                 result = handle_message(connection, message)
             return jsonify(result)
-        except ValueError as exc:
+        except (TypeError, ValueError) as exc:
             return jsonify({"error": str(exc)}), 400
 
     @app.get("/api/contacts")
@@ -183,7 +183,7 @@ def create_app() -> Flask:
             title = clean_text(body.get("title"), max_length=300)
             due_text_raw = body.get("due_text", "")
             if not isinstance(due_text_raw, str):
-                raise ValueError("La fecha debe ser texto.")
+                raise TypeError("La fecha debe ser texto.")
             due_text = due_text_raw.strip()
             if len(due_text) > 100:
                 raise ValueError("La fecha o nota no puede superar 100 caracteres.")
