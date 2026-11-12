@@ -8,8 +8,8 @@ from typing import Any
 
 from .ai_provider import interpret_with_provider
 from .security import clean_text
-from .whatsapp import build_whatsapp_link
 from .tools import is_allowed_intent
+from .whatsapp import build_whatsapp_link
 
 
 MESSAGE_PATTERN = re.compile(
