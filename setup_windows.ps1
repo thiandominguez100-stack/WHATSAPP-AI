@@ -6,6 +6,10 @@ if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
     throw "No se encontró 'py'. Instala Python 3.10+ y vuelve a ejecutar."
 }
 py --version
+py -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)"
+if ($LASTEXITCODE -ne 0) {
+    throw "Se requiere Python 3.10 o superior. Actualiza Python y vuelve a ejecutar."
+}
 
 if (Get-Command ollama -ErrorAction SilentlyContinue) {
     Write-Host "Ollama detectado."
@@ -22,7 +26,9 @@ if (Get-Command ollama -ErrorAction SilentlyContinue) {
 if (-not (Test-Path ".venv")) { py -m venv .venv }
 $python = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
 & $python -m pip install --upgrade pip
+if ($LASTEXITCODE -ne 0) { throw "No se pudo actualizar pip." }
 & $python -m pip install -r requirements.txt
+if ($LASTEXITCODE -ne 0) { throw "No se pudieron instalar las dependencias." }
 
 if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
@@ -30,4 +36,4 @@ if (-not (Test-Path ".env")) {
 } else {
     Write-Host ".env existente conservado; no se sobrescribió."
 }
-Write-Host "Preparación terminada. Ejecuta .\run_windows.ps1" -ForegroundColor Green
+Write-Host "Preparación terminada. Ejecuta .\doctor_windows.ps1 y luego .\run_windows.ps1" -ForegroundColor Green
