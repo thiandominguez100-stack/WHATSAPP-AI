@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 
 from .agent import handle_message
-from .database import connect_db, init_db
+from .database import db_session, init_db
 from .security import clean_text, normalize_phone
 
 
@@ -46,7 +46,7 @@ def create_app() -> Flask:
 
     @app.get("/api/health")
     def health():
-        with connect_db() as connection:
+        with db_session() as connection:
             connection.execute("SELECT 1").fetchone()
         return jsonify({"ok": True, "app": "WA-Bridge AI", "mode": "local"})
 
@@ -55,7 +55,7 @@ def create_app() -> Flask:
         body = _body()
         try:
             message = clean_text(body.get("message"), max_length=1500)
-            with connect_db() as connection:
+            with db_session() as connection:
                 result = handle_message(connection, message)
             return jsonify(result)
         except ValueError as exc:
@@ -63,7 +63,7 @@ def create_app() -> Flask:
 
     @app.get("/api/contacts")
     def get_contacts():
-        with connect_db() as connection:
+        with db_session() as connection:
             rows = connection.execute(
                 "SELECT id, name, phone, created_at FROM contacts ORDER BY name COLLATE NOCASE"
             ).fetchall()
@@ -75,7 +75,7 @@ def create_app() -> Flask:
         try:
             name = clean_text(body.get("name"), max_length=100)
             phone = normalize_phone(body.get("phone"))
-            with connect_db() as connection:
+            with db_session() as connection:
                 cursor = connection.execute(
                     "INSERT INTO contacts(name, phone) VALUES (?, ?)", (name, phone)
                 )
@@ -96,7 +96,7 @@ def create_app() -> Flask:
 
     @app.delete("/api/contacts/<int:contact_id>")
     def delete_contact(contact_id: int):
-        with connect_db() as connection:
+        with db_session() as connection:
             row = connection.execute(
                 "SELECT name FROM contacts WHERE id = ?", (contact_id,)
             ).fetchone()
@@ -112,7 +112,7 @@ def create_app() -> Flask:
 
     @app.get("/api/tasks")
     def get_tasks():
-        with connect_db() as connection:
+        with db_session() as connection:
             rows = connection.execute(
                 """SELECT id, title, due_text, status, created_at, completed_at
                    FROM tasks ORDER BY CASE status WHEN 'pending' THEN 0 ELSE 1 END,
@@ -129,7 +129,7 @@ def create_app() -> Flask:
             if not isinstance(due_text_raw, str):
                 raise ValueError("La fecha debe ser texto.")
             due_text = due_text_raw.strip()[:100]
-            with connect_db() as connection:
+            with db_session() as connection:
                 cursor = connection.execute(
                     "INSERT INTO tasks(title, due_text) VALUES (?, ?)", (title, due_text)
                 )
@@ -152,7 +152,7 @@ def create_app() -> Flask:
         status = body.get("status")
         if status not in {"pending", "completed"}:
             return jsonify({"error": "Estado no válido."}), 400
-        with connect_db() as connection:
+        with db_session() as connection:
             row = connection.execute(
                 "SELECT title FROM tasks WHERE id = ?", (task_id,)
             ).fetchone()
@@ -173,7 +173,7 @@ def create_app() -> Flask:
 
     @app.get("/api/history")
     def get_history():
-        with connect_db() as connection:
+        with db_session() as connection:
             rows = connection.execute(
                 "SELECT id, action, summary, status, created_at FROM history "
                 "ORDER BY id DESC LIMIT 100"
@@ -182,7 +182,7 @@ def create_app() -> Flask:
 
     @app.post("/api/drafts/<int:draft_id>/opened")
     def mark_draft_opened(draft_id: int):
-        with connect_db() as connection:
+        with db_session() as connection:
             row = connection.execute(
                 "SELECT recipient_name FROM drafts WHERE id = ?", (draft_id,)
             ).fetchone()
