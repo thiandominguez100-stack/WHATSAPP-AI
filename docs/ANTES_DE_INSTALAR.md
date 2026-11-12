@@ -43,7 +43,7 @@ El instalador crea `.venv`, instala las dependencias Python y copia `.env.exampl
 .\doctor_windows.ps1
 ```
 
-El diagnóstico comprueba Python, entorno virtual, configuración, Ollama, presencia del modelo y disponibilidad del puerto 5000. No cambia la configuración ni imprime secretos.
+El diagnóstico comprueba Python, dependencias del entorno virtual, configuración, Ollama, presencia del modelo y disponibilidad del puerto 5000. No cambia la configuración ni imprime secretos. Devuelve código 1 si alguna comprobación falla; revisa las líneas `[FALTA]`.
 
 Si el puerto 5000 ya está ocupado, no cierres procesos al azar. Informa el mensaje de diagnóstico para identificar qué lo está usando.
 
@@ -69,7 +69,7 @@ En otra ventana de PowerShell, dentro de la carpeta del proyecto:
 
 También puedes abrir `http://127.0.0.1:5000/api/health`; debe responder con `"ok": true`.
 
-Prueba la interfaz con datos ficticios primero: agrega un contacto de prueba, crea una tarea y consulta el historial. No uses números de otras personas sin permiso.
+Prueba la interfaz con datos ficticios primero: agrega un contacto de prueba, prepara un borrador, abre la sección Borradores, crea una tarea y consulta el historial. Los nombres de contacto deben coincidir exactamente; si hay nombres duplicados, la aplicación pide que los diferencies. No uses números de otras personas sin permiso.
 
 ## 6. Copia de seguridad
 
@@ -84,7 +84,8 @@ El archivo se guarda en `backups`. Conserva las copias en un lugar privado: pued
 ## Límites actuales
 
 - La aplicación administra datos guardados localmente.
-- Puede preparar un borrador y abrir un enlace oficial `wa.me` para revisión manual.
+- Puede preparar, guardar y volver a consultar borradores; abrir un enlace oficial `wa.me` solo inicia la revisión manual.
+- La API rechaza solicitudes de red externas y operaciones mutables con un origen web distinto.
 - No lee automáticamente chats ni contactos de WhatsApp.
 - No envía mensajes en segundo plano.
 - El historial registra acciones de la aplicación, no el historial completo de WhatsApp.
