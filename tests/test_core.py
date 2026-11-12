@@ -171,20 +171,20 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(saved[0]["id"], draft["id"])
         self.assertEqual(saved[0]["recipient_name"], "Ana")
 
-    def test_open_draft_is_idempotent_and_does_not_claim_sent(self):
+    def test_draft_link_click_is_idempotent_and_does_not_claim_sent(self):
         self.add_contact()
         draft = self.client.post(
             "/api/chat", json={"message": "prepara un mensaje para Ana diciendo hola"}
         ).get_json()["draft"]
-        first = self.client.post(f"/api/drafts/{draft['id']}/opened", json={})
-        second = self.client.post(f"/api/drafts/{draft['id']}/opened", json={})
+        first = self.client.post(f"/api/drafts/{draft['id']}/clicked", json={})
+        second = self.client.post(f"/api/drafts/{draft['id']}/clicked", json={})
         self.assertFalse(first.get_json()["message_sent"])
         self.assertEqual(second.status_code, 200)
         history = self.client.get("/api/history").get_json()["history"]
         self.assertEqual(sum(item["action"] == "whatsapp.open" for item in history), 1)
 
     def test_missing_draft_returns_404(self):
-        self.assertEqual(self.client.post("/api/drafts/999/opened", json={}).status_code, 404)
+        self.assertEqual(self.client.post("/api/drafts/999/clicked", json={}).status_code, 404)
 
     def test_reject_invalid_contact_and_chat_payloads(self):
         self.assertEqual(self.client.post("/api/contacts", json={"name": "", "phone": "5493511234567"}).status_code, 400)
