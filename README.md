@@ -2,129 +2,63 @@
 
 Asistente web modular para organizar contactos, interpretar instrucciones sencillas, preparar mensajes y administrar tareas.
 
-> Estado: MVP inicial. La integración de WhatsApp prepara enlaces oficiales `wa.me`; el usuario revisa el destinatario y pulsa enviar en WhatsApp. No automatiza WhatsApp Web, no extrae sesiones y no lee conversaciones privadas.
+> Estado: MVP local. WhatsApp se abre mediante enlaces oficiales `wa.me`; el usuario revisa y confirma el envío. No automatiza WhatsApp Web ni lee conversaciones privadas.
 
-## Funciones incluidas
+## Funciones actuales
 
-- Chat con un intérprete local básico de instrucciones en español.
-- Agenda local de contactos (nombre y número).
-- Preparación de borradores de WhatsApp con vista previa.
-- Apertura de conversaciones mediante enlaces oficiales `https://wa.me/`.
-- Tareas y recordatorios almacenados en SQLite.
-- Historial local de operaciones.
-- Registro centralizado de herramientas y validaciones.
-- Interfaz web sencilla servida por Flask.
+- Chat con intérprete local y proveedor compatible con OpenAI Chat Completions.
+- Configuración preparada para Ollama local con `qwen2.5:1.5b`.
+- Contactos, borradores, tareas e historial en SQLite.
+- Herramientas permitidas explícitamente; el modelo no ejecuta código arbitrario.
 
 ## Requisitos
 
-- Python 3.10 o superior.
-- pip.
+- Windows 10/11, Python 3.10+ y Ollama (para Qwen local).
+- Modelo `qwen2.5:1.5b` ya descargado. El instalador no lo vuelve a descargar.
 
-## Ejecutar en Windows
+## Instalación rápida en Windows
 
-1. Descarga o clona el repositorio.
-2. Abre PowerShell en la carpeta del proyecto.
-3. Crea y activa un entorno virtual:
+Abre PowerShell en la carpeta del repositorio:
 
 ```powershell
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
+Set-ExecutionPolicy -Scope Process Bypass
+.\setup_windows.ps1
 ```
 
-4. Instala dependencias:
+Luego:
 
 ```powershell
-py -m pip install -r requirements.txt
+.\run_windows.ps1
 ```
 
-5. Copia `.env.example` a `.env` (opcional para la primera versión).
-6. Inicia el servidor:
+Abre http://127.0.0.1:5000. El script crea .venv, instala dependencias, comprueba Ollama y crea .env sin sobrescribir configuraciones existentes. Si el modelo ya está instalado, no se descarga de nuevo.
+
+Comprueba el modelo con `ollama list`. La URL local configurada es `http://127.0.0.1:11434/v1`; Ollama debe estar ejecutándose.
+
+## Uso
+
+Agrega un contacto y prueba: `prepara un mensaje para Ana diciendo que mañana llego a las 10`. Revisa el borrador y abre WhatsApp para confirmar el envío. También puedes crear tareas o consultar tus listas.
+
+## Seguridad
+
+No introduzcas códigos de verificación, cookies, tokens de sesión ni contraseñas de WhatsApp. No se incluye automatización no oficial. No envíes mensajes masivos no solicitados. No expongas esta versión en Internet: todavía no tiene autenticación ni aislamiento multiusuario.
+
+## Almacenamiento
+
+No se descargan modelos automáticamente. El objetivo inicial es mantener el uso total del proyecto por debajo de 10 GB, con ampliación a 20 GB solo si hace falta. El modelo local Qwen ya instalado ocupa aproximadamente 1 GB.
+
+## Estado multiusuario
+
+El repositorio sigue siendo un MVP local de un solo usuario. Registro público, inicio de sesión, aislamiento de datos por cuenta, controles antiabuso y despliegue seguro son etapas pendientes. No basta con añadir una pantalla de registro: cada consulta y modificación debe quedar vinculada a la identidad autenticada y probarse contra accesos cruzados.
+
+## Pruebas
 
 ```powershell
-py run.py
+.\.venv\Scripts\python.exe -m unittest discover -v
 ```
 
-7. Abre http://127.0.0.1:5000
-
-## Ejecutar en Linux / macOS
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-python run.py
-```
-
-## Primeros pasos
-
-1. Entra en **Contactos** y agrega un nombre con su número internacional (por ejemplo, código de país + número, solo dígitos).
-2. En el chat escribe: `prepara un mensaje para Ana diciendo que mañana llego a las 10`.
-3. Revisa el borrador y el destinatario.
-4. Pulsa **Abrir WhatsApp** y confirma/envía el mensaje desde WhatsApp.
-
-También puedes escribir `crear tarea estudiar matemática` o administrar tareas desde la pestaña correspondiente.
-
-## Configurar un proveedor de IA (opcional)
-
-La aplicación incluye un intérprete local básico. Para usar un modelo externo compatible con la API de Chat Completions:
-
-1. Copia `.env.example` a `.env`.
-2. Completa `AI_BASE_URL` con la URL base del proveedor (por ejemplo, el endpoint base que termina en `/v1`).
-3. Completa `AI_MODEL` con el identificador exacto del modelo.
-4. Completa `AI_API_KEY` con la clave obtenida directamente del proveedor, si la requiere.
-5. Reinicia la aplicación.
-
-El proveedor debe ser compatible con el formato OpenAI Chat Completions. La disponibilidad gratuita, los límites y las condiciones dependen del proveedor; este proyecto no incluye claves ni garantiza una cuota gratuita. Se aceptan URLs HTTPS y endpoints locales en `localhost`. Nunca publiques tu archivo `.env`.
-
-## Privacidad y seguridad
-
-- La base SQLite se guarda en `data/wa_bridge.db` en el equipo donde corre el servidor.
-- No introduzcas códigos de verificación, cookies, tokens de sesión ni contraseñas de WhatsApp.
-- No se incluye automatización no oficial de WhatsApp Web.
-- Los mensajes se abren para revisión; no se envían en segundo plano.
-- No expongas el servidor en Internet sin añadir autenticación, HTTPS y controles de acceso.
-- No subas `.env`, bases de datos, contactos ni claves al repositorio.
-
-## Estructura
-
-```text
-backend/
-  app.py
-  agent.py
-  database.py
-  security.py
-  whatsapp.py
-  static/
-    app.js
-    style.css
-  templates/
-    index.html
-tests/
-  test_core.py
-data/
-run.py
-requirements.txt
-.env.example
-.gitignore
-```
-
-## Ejecutar pruebas
-
-```bash
-python -m unittest discover -v
-```
-
-También se ejecutan automáticamente en GitHub Actions al actualizar `main` o abrir un pull request.
-
-## Próximas etapas
-
-1. Conectar un proveedor de IA compatible y configurable, sin atar el proyecto a una sola marca.
-2. Añadir autenticación local y perfiles/permisos.
-3. Añadir importación de contactos con consentimiento.
-4. Evaluar integraciones oficiales de WhatsApp que sean elegibles para el uso y la región de la cuenta.
-5. Incorporar pruebas y empaquetado para ejecución local.
+GitHub Actions ejecuta pruebas al actualizar main o abrir un pull request.
 
 ## Licencia
 
-Aún no se ha definido una licencia. No asumas que el código puede redistribuirse hasta que se elija una.
+Todavía no se ha definido una licencia.
