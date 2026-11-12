@@ -19,8 +19,9 @@ MESSAGE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 TASK_PATTERN = re.compile(
-    r"^(?:crear|crea|agregar|agrega|anotar|anota|recordame|recu[eé]rdame|programa)"
-    r"\s+(?:una\s+)?(?:tarea|recordatorio)\s*(?:(?:de|para)\s+|:\s*)?(.+)$",
+    r"^(?:(?:crear|crea|agregar|agrega|anotar|anota)\s+(?:una\s+)?"
+    r"(?:tarea|recordatorio)\s*(?:(?:de|para)\s+|:\s*)?"
+    r"|(?:recordame|recu[eé]rdame)\s+)(.+)$",
     re.IGNORECASE,
 )
 
