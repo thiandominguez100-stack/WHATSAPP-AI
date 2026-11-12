@@ -87,8 +87,10 @@ def handle_message(connection: sqlite3.Connection, user_text: str) -> dict[str, 
         kind = "unknown"
 
     if kind == "draft_message":
-        recipient = str(intent.get("recipient", "")).strip()
-        message = str(intent.get("message", "")).strip()
+        recipient_value = intent.get("recipient", "")
+        message_value = intent.get("message", "")
+        recipient = recipient_value.strip() if isinstance(recipient_value, str) else ""
+        message = message_value.strip() if isinstance(message_value, str) else ""
         if not recipient or not message or len(message) > 2000:
             return {
                 "reply": "No pude identificar con suficiente claridad el destinatario y el texto. "
@@ -137,8 +139,12 @@ def handle_message(connection: sqlite3.Connection, user_text: str) -> dict[str, 
         }
 
     if kind == "create_task":
-        title = clean_text(str(intent.get("title", "")), max_length=300)
-        due_text = str(intent.get("due_text", "")).strip()[:100]
+        title_value = intent.get("title", "")
+        if not isinstance(title_value, str) or not title_value.strip():
+            return {"reply": "Decime qué tarea querés guardar.", "kind": "clarification"}
+        title = clean_text(title_value, max_length=300)
+        due_value = intent.get("due_text", "")
+        due_text = due_value.strip()[:100] if isinstance(due_value, str) else ""
         cursor = connection.execute(
             "INSERT INTO tasks(title, due_text) VALUES (?, ?)", (title, due_text)
         )
