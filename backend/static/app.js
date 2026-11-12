@@ -48,6 +48,7 @@ function showDraft(draft) {
   link.textContent = "Abrir WhatsApp";
   link.addEventListener("click", () => {
     api("/api/drafts/" + draft.id + "/opened", { method: "POST", body: "{}" })
+      .then(() => loadDrafts().catch(() => {}))
       .catch(() => {});
   });
   card.append(main, link);
@@ -61,9 +62,13 @@ document.querySelectorAll("[data-tab]").forEach((button) => {
     document.querySelectorAll(".panel").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
     $("tab-" + button.dataset.tab).classList.add("active");
-    if (button.dataset.tab === "contacts") loadContacts();
-    if (button.dataset.tab === "tasks") loadTasks();
-    if (button.dataset.tab === "history") loadHistory();
+    const loaders = {
+      contacts: loadContacts,
+      tasks: loadTasks,
+      drafts: loadDrafts,
+      history: loadHistory
+    };
+    if (loaders[button.dataset.tab]) loaders[button.dataset.tab]().catch((error) => toast(error.message));
   });
 });
 
@@ -81,7 +86,10 @@ $("chat-form").addEventListener("submit", async (event) => {
       body: JSON.stringify({ message })
     });
     showBubble(result.reply || "Operación procesada.");
-    if (result.draft) showDraft(result.draft);
+    if (result.draft) {
+      showDraft(result.draft);
+      loadDrafts().catch(() => {});
+    }
     if (result.task) loadTasks().catch(() => {});
     loadHistory().catch(() => {});
   } catch (error) {
@@ -127,8 +135,9 @@ async function loadContacts() {
       try {
         await api("/api/contacts/" + contact.id, { method: "DELETE" });
         toast("Contacto eliminado.");
-        loadContacts();
+        await loadContacts();
         loadHistory().catch(() => {});
+        loadDrafts().catch(() => {});
       } catch (error) { toast(error.message); }
     });
     item.append(main, remove);
@@ -148,7 +157,7 @@ $("contact-form").addEventListener("submit", async (event) => {
     });
     $("contact-form").reset();
     toast("Contacto guardado.");
-    loadContacts();
+    await loadContacts();
     loadHistory().catch(() => {});
   } catch (error) { toast(error.message); }
 });
@@ -183,7 +192,7 @@ async function loadTasks() {
         await api("/api/tasks/" + task.id, {
           method: "PATCH", body: JSON.stringify({ status })
         });
-        loadTasks();
+        await loadTasks();
         loadHistory().catch(() => {});
       } catch (error) { toast(error.message); }
     });
@@ -204,10 +213,51 @@ $("task-form").addEventListener("submit", async (event) => {
     });
     $("task-form").reset();
     toast("Tarea guardada.");
-    loadTasks();
+    await loadTasks();
     loadHistory().catch(() => {});
   } catch (error) { toast(error.message); }
 });
+
+async function loadDrafts() {
+  const list = $("drafts-list");
+  list.replaceChildren();
+  const data = await api("/api/drafts");
+  if (!data.drafts.length) {
+    list.append(makeEmpty("Todavía no preparaste borradores."));
+    return;
+  }
+  data.drafts.forEach((draft) => {
+    const item = document.createElement("div");
+    item.className = "item";
+    const main = document.createElement("div");
+    main.className = "item-main";
+    const title = document.createElement("strong");
+    title.textContent = "Para " + draft.recipient_name;
+    const message = document.createElement("div");
+    message.className = "item-meta";
+    message.textContent = draft.message;
+    const status = document.createElement("div");
+    status.className = "item-meta";
+    status.textContent = draft.status === "opened_in_whatsapp"
+      ? "WhatsApp abierto anteriormente; envío no verificado"
+      : "Preparado; todavía no se ha abierto desde esta aplicación";
+    main.append(title, message, status);
+    const link = document.createElement("a");
+    link.className = "link-btn";
+    link.href = "https://wa.me/" + encodeURIComponent(draft.phone) +
+      "?text=" + encodeURIComponent(draft.message);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Revisar en WhatsApp";
+    link.addEventListener("click", () => {
+      api("/api/drafts/" + draft.id + "/opened", { method: "POST", body: "{}" })
+        .then(() => loadDrafts().catch(() => {}))
+        .catch(() => {});
+    });
+    item.append(main, link);
+    list.append(item);
+  });
+}
 
 async function loadHistory() {
   const list = $("history-list");
@@ -236,6 +286,9 @@ async function loadHistory() {
 $("refresh-history").addEventListener("click", () => {
   loadHistory().catch((error) => toast(error.message));
 });
+$("refresh-drafts").addEventListener("click", () => {
+  loadDrafts().catch((error) => toast(error.message));
+});
 
 async function init() {
   try {
@@ -247,18 +300,23 @@ async function init() {
   }
   try {
     const settings = await api("/api/settings");
-    $("ai-mode").textContent = settings.provider_configured
-      ? "Proveedor IA compatible configurado"
-      : "Intérprete local básico (sin proveedor IA)";
-    $("provider-status").textContent = settings.provider_configured
-      ? "Proveedor externo configurado · revisa su política y límites"
-      : "IA externa sin configurar · consulta README para configurarla";
+    if (settings.provider_mode === "ollama_local") {
+      $("ai-mode").textContent = "Ollama local · " + settings.model;
+      $("provider-status").textContent = "Modelo local configurado";
+    } else if (settings.provider_configured) {
+      $("ai-mode").textContent = "Proveedor compatible configurado";
+      $("provider-status").textContent = "Proveedor remoto configurado · revisa su política y límites";
+    } else {
+      $("ai-mode").textContent = "Intérprete local básico (sin proveedor IA)";
+      $("provider-status").textContent = "Proveedor IA no configurado";
+    }
   } catch {
     $("provider-status").textContent = "No se pudo leer la configuración";
   }
-  loadContacts().catch(() => {});
-  loadTasks().catch(() => {});
-  loadHistory().catch(() => {});
+  loadContacts().catch((error) => toast(error.message));
+  loadTasks().catch((error) => toast(error.message));
+  loadDrafts().catch((error) => toast(error.message));
+  loadHistory().catch((error) => toast(error.message));
 }
 
 init();
