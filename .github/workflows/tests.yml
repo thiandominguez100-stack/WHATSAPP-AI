@@ -31,7 +31,7 @@ jobs:
       - name: Check browser JavaScript syntax
         run: node --check backend/static/app.js
       - name: Run unit tests
-        run: python -m unittest discover -v
+        run: python -X tracemalloc=5 -W default::ResourceWarning -m unittest discover -v
 
   windows-script-validation:
     name: Validate Windows PowerShell scripts
