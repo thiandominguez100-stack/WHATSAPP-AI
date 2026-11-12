@@ -249,7 +249,7 @@ def create_app() -> Flask:
             ).fetchall()
         return jsonify({"history": [dict(row) for row in rows]})
 
-    @app.post("/api/drafts/<int:draft_id>/opened")
+    @app.post("/api/drafts/<int:draft_id>/clicked")
     def mark_draft_opened(draft_id: int):
         with db_session() as connection:
             row = connection.execute(
@@ -257,17 +257,17 @@ def create_app() -> Flask:
             ).fetchone()
             if row is None:
                 return jsonify({"error": "Borrador no encontrado."}), 404
-            if row["status"] != "opened_in_whatsapp":
+            if row["status"] != "link_clicked":
                 connection.execute(
-                    "UPDATE drafts SET status = 'opened_in_whatsapp' WHERE id = ?", (draft_id,)
+                    "UPDATE drafts SET status = 'link_clicked' WHERE id = ?", (draft_id,)
                 )
                 connection.execute(
                     "INSERT INTO history(action, summary, status) VALUES (?, ?, ?)",
-                    ("whatsapp.open", f"Se abrió WhatsApp para {row['recipient_name']}; envío no verificado.",
+                    ("whatsapp.open", f"Se solicitó abrir el enlace de WhatsApp para {row['recipient_name']}; envío no verificado.",
                      "opened"),
                 )
                 connection.commit()
-        return jsonify({"ok": True, "status": "opened_in_whatsapp",
+        return jsonify({"ok": True, "status": "link_clicked",
                         "message_sent": False})
 
     @app.get("/api/tools")
