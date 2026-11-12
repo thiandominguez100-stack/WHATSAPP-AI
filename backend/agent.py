@@ -105,6 +105,12 @@ def handle_message(connection: sqlite3.Connection, user_text: str) -> dict[str, 
                          "Revisá el nombre en Contactos; no elegiré coincidencias parciales.",
                 "kind": "not_found",
             }
+        if len(matches) > 1:
+            return {
+                "reply": f"Hay {len(matches)} contactos con el nombre «{recipient}». "
+                         "Diferencialos en Contactos antes de preparar el mensaje.",
+                "kind": "ambiguous",
+            }
 
         contact = matches[0]
         link = build_whatsapp_link(contact["phone"], message)
