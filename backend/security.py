@@ -9,7 +9,7 @@ _ALLOWED_PHONE_CHARS = re.compile(r"^\+?[0-9\s().-]+$")
 
 def clean_text(value: object, *, max_length: int = 500) -> str:
     if not isinstance(value, str):
-        raise ValueError("Se esperaba texto.")
+        raise TypeError("Se esperaba texto.")
     cleaned = value.strip()
     if not cleaned:
         raise ValueError("El texto no puede estar vacío.")
@@ -22,7 +22,7 @@ def clean_text(value: object, *, max_length: int = 500) -> str:
 
 def normalize_phone(value: object) -> str:
     if not isinstance(value, str):
-        raise ValueError("El teléfono debe ser texto.")
+        raise TypeError("El teléfono debe ser texto.")
     raw = value.strip()
     if not raw or not _ALLOWED_PHONE_CHARS.fullmatch(raw):
         raise ValueError(
