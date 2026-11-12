@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+import unicodedata
 from typing import Any
 
 from .ai_provider import interpret_with_provider
@@ -59,24 +60,28 @@ def _local_intent(text: str) -> dict[str, str]:
     return {"intent": "unknown"}
 
 
+def _normalize_name(value: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", value.casefold().strip())
+    return " ".join("".join(ch for ch in decomposed if not unicodedata.combining(ch)).split())
+
+
 def _find_contact(connection: sqlite3.Connection, name: str) -> list[sqlite3.Row]:
+    """Match a complete normalized name only; never guess between partial names."""
+    query = _normalize_name(name)
+    if not query:
+        return []
     rows = connection.execute(
         "SELECT id, name, phone FROM contacts ORDER BY name COLLATE NOCASE"
     ).fetchall()
-    query = name.strip().casefold()
-    exact = [row for row in rows if row["name"].casefold() == query]
-    if exact:
-        return exact
-    return [
-        row for row in rows
-        if query in row["name"].casefold() or row["name"].casefold() in query
-    ]
+    return [row for row in rows if _normalize_name(row["name"]) == query]
 
 
 def handle_message(connection: sqlite3.Connection, user_text: str) -> dict[str, Any]:
-    """Interpret a user request; only dispatch allow-listed, low-risk operations."""
+    """Interpret a request; dispatch only allow-listed local operations."""
     text = clean_text(user_text, max_length=1500)
-    intent = interpret_with_provider(text) or _local_intent(text)
+    intent = interpret_with_provider(text)
+    if not intent or intent.get("intent") == "unknown":
+        intent = _local_intent(text)
     kind = intent.get("intent", "unknown")
     if kind not in {"help"} and not is_allowed_intent(kind):
         kind = "unknown"
@@ -93,18 +98,12 @@ def handle_message(connection: sqlite3.Connection, user_text: str) -> dict[str, 
 
         matches = _find_contact(connection, recipient)
         if not matches:
-            _record(connection, "message.lookup", f"No se encontró el contacto: {recipient}", "not_found")
+            _record(connection, "message.lookup", f"No se encontró una coincidencia exacta para: {recipient}", "not_found")
             connection.commit()
             return {
-                "reply": f"No encontré a «{recipient}» en tus contactos. Agregalo primero en Contactos.",
+                "reply": f"No encontré una coincidencia exacta para «{recipient}». "
+                         "Revisá el nombre en Contactos; no elegiré coincidencias parciales.",
                 "kind": "not_found",
-            }
-        if len(matches) > 1:
-            names = ", ".join(row["name"] for row in matches[:5])
-            return {
-                "reply": f"Encontré varios contactos que coinciden: {names}. "
-                         "Escribí el nombre completo para evitar elegir a la persona equivocada.",
-                "kind": "ambiguous",
             }
 
         contact = matches[0]
@@ -132,11 +131,8 @@ def handle_message(connection: sqlite3.Connection, user_text: str) -> dict[str, 
         }
 
     if kind == "create_task":
-        title = str(intent.get("title", "")).strip()
+        title = clean_text(str(intent.get("title", "")), max_length=300)
         due_text = str(intent.get("due_text", "")).strip()[:100]
-        if not title:
-            return {"reply": "Decime qué tarea querés guardar.", "kind": "clarification"}
-        title = clean_text(title, max_length=300)
         cursor = connection.execute(
             "INSERT INTO tasks(title, due_text) VALUES (?, ?)", (title, due_text)
         )
