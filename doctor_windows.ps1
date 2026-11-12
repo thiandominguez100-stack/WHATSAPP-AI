@@ -19,7 +19,11 @@ $py = Get-Command py -ErrorAction SilentlyContinue
 if ($py) {
     $versionText = & py --version 2>&1
     $versionOk = $LASTEXITCODE -eq 0
-    Check-Result "Python" $versionOk "$versionText"
+    if ($versionOk) {
+        py -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)"
+        $versionOk = $LASTEXITCODE -eq 0
+    }
+    Check-Result "Python 3.10+" $versionOk "$versionText"
 } else {
     Check-Result "Python" $false "No se encontró el lanzador 'py'. Instala Python 3.10 o superior."
 }
