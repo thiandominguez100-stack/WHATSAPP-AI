@@ -14,6 +14,8 @@ Asistente web **personal y local** para trabajar únicamente con el WhatsApp del
 
 La integración con una cuenta real de WhatsApp queda fuera de estas cinco fases. Se evaluará después mediante mecanismos autorizados. No se extraen cookies, códigos, tokens ni sesiones de WhatsApp Web.
 
+**Estado de implementación:** el simulador específico de la fase 5 todavía no está implementado. Los contactos y borradores actuales son datos locales de la aplicación, no conversaciones simuladas ni chats reales. El proveedor actual es un único adaptador compatible con OpenAI Chat Completions, que puede conectarse a Ollama o a servicios compatibles; todavía no es un orquestador multiagente.
+
 ## Funciones actuales
 
 - Chat en español con intérprete local y adaptador compatible con OpenAI Chat Completions.
