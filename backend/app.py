@@ -275,12 +275,16 @@ def create_app() -> Flask:
     def settings():
         base_url = os.getenv("AI_BASE_URL", "").strip()
         model = os.getenv("AI_MODEL", "").strip()
-        parsed = urlsplit(base_url) if base_url else None
         provider_configured = bool(base_url and model)
-        provider_is_local = bool(
-            parsed and parsed.scheme == "http"
-            and parsed.hostname in {"127.0.0.1", "localhost", "::1"}
-        )
+        try:
+            parsed = urlsplit(base_url) if base_url else None
+            provider_is_local = bool(
+                parsed and parsed.scheme == "http"
+                and parsed.hostname in {"127.0.0.1", "localhost", "::1"}
+                and parsed.username is None and parsed.password is None
+            )
+        except ValueError:
+            provider_is_local = False
         return jsonify({
             "provider_configured": provider_configured,
             "provider_mode": "ollama_local" if provider_is_local else (
