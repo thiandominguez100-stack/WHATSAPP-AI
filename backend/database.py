@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def database_path() -> Path:
-    configured = os.getenv("WA_BRIDGE_DB", "data/wa_bridge.db")
+    configured = os.getenv("WA_BRIDGE_DB", "").strip() or "data/wa_bridge.db"
     path = Path(configured)
     if not path.is_absolute():
         path = PROJECT_ROOT / path
