@@ -295,7 +295,7 @@ def create_app() -> Flask:
         provider_configured = bool(endpoint_valid and model)
         return jsonify({
             "provider_configured": provider_configured,
-            "provider_mode": "ollama_local" if provider_is_local else (
+            "provider_mode": "ollama_local" if provider_configured and provider_is_local else (
                 "compatible_api" if provider_configured else "local_parser"
             ),
             "provider_is_local": provider_is_local,
