@@ -8,10 +8,11 @@ from typing import Any
 from .ai_provider import interpret_with_provider
 from .security import clean_text
 from .whatsapp import build_whatsapp_link
+from .tools import is_allowed_intent
 
 
 MESSAGE_PATTERN = re.compile(
-    r"^(?:prepara|preparame|redacta|escribe|arma|manda|mandale|envia|enviale)"
+    r"^(?:prepara|prepar[aá]me|redacta|escribe|arma|manda|mand[aá]le|env[ií]a|env[ií]ale)"
     r"\s+(?:un\s+)?mensaje\s+(?:para|a)\s+(.+?)\s+"
     r"(?:diciendole|diciendo(?:le)?(?:\s+que)?|que\s+diga|con\s+el\s+texto)\s+(.+)$",
     re.IGNORECASE,
@@ -77,6 +78,8 @@ def handle_message(connection: sqlite3.Connection, user_text: str) -> dict[str, 
     text = clean_text(user_text, max_length=1500)
     intent = interpret_with_provider(text) or _local_intent(text)
     kind = intent.get("intent", "unknown")
+    if kind not in {"help"} and not is_allowed_intent(kind):
+        kind = "unknown"
 
     if kind == "draft_message":
         recipient = str(intent.get("recipient", "")).strip()
