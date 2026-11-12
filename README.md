@@ -2,7 +2,7 @@
 
 Asistente web **personal y local** para trabajar únicamente con el WhatsApp del propietario del equipo. No tendrá registro público ni cuentas para terceros.
 
-> Estado: MVP local. La aplicación prepara borradores y abre conversaciones mediante enlaces oficiales `wa.me`; el usuario revisa y confirma el envío. Esta versión no automatiza WhatsApp Web ni lee conversaciones privadas.
+> Estado: MVP local. La aplicación prepara borradores y genera enlaces oficiales `wa.me` para que el usuario los abra manualmente. Un clic no confirma que WhatsApp haya abierto la conversación ni que el mensaje se haya enviado. Esta versión no automatiza WhatsApp Web ni lee conversaciones privadas.
 
 ## Alcance: fases 1 a 5
 
