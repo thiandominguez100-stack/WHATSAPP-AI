@@ -47,7 +47,7 @@ function showDraft(draft) {
   link.rel = "noopener noreferrer";
   link.textContent = "Abrir WhatsApp";
   link.addEventListener("click", () => {
-    api("/api/drafts/" + draft.id + "/opened", { method: "POST", body: "{}" })
+    api("/api/drafts/" + draft.id + "/clicked", { method: "POST", body: "{}" })
       .then(() => loadDrafts().catch(() => {}))
       .catch(() => {});
   });
@@ -238,8 +238,8 @@ async function loadDrafts() {
     message.textContent = draft.message;
     const status = document.createElement("div");
     status.className = "item-meta";
-    status.textContent = draft.status === "opened_in_whatsapp"
-      ? "WhatsApp abierto anteriormente; envío no verificado"
+    status.textContent = draft.status === "link_clicked"
+      ? "Enlace de WhatsApp solicitado anteriormente; envío no verificado"
       : "Preparado; todavía no se ha abierto desde esta aplicación";
     main.append(title, message, status);
     const link = document.createElement("a");
@@ -250,7 +250,7 @@ async function loadDrafts() {
     link.rel = "noopener noreferrer";
     link.textContent = "Revisar en WhatsApp";
     link.addEventListener("click", () => {
-      api("/api/drafts/" + draft.id + "/opened", { method: "POST", body: "{}" })
+      api("/api/drafts/" + draft.id + "/clicked", { method: "POST", body: "{}" })
         .then(() => loadDrafts().catch(() => {}))
         .catch(() => {});
     });
