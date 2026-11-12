@@ -5,13 +5,14 @@ __pycache__/
 venv/
 .env
 
-# Local database and runtime data
-data/*.db
-data/*.sqlite3
-*.log
-backups/
+# Local databases, logs and backups
+*.db
+*.sqlite
+*.sqlite3
 *.db-wal
 *.db-shm
+*.log
+backups/
 
 # Editors / OS
 .vscode/
