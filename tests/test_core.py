@@ -12,7 +12,7 @@ from unittest.mock import patch
 from backend.agent import _find_contact
 from backend.ai_provider import _endpoint, interpret_with_provider
 from backend.app import create_app
-from backend.database import db_session, database_path
+from backend.database import database_path, db_session
 from backend.security import clean_text, normalize_phone
 from backend.whatsapp import build_whatsapp_link
 from scripts import backup_db
@@ -59,9 +59,14 @@ class CoreTests(unittest.TestCase):
         for value in ("123", "abc5493511234567", "54+93511234567", "", "+"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 normalize_phone(value)
+        with self.assertRaises(TypeError):
+            normalize_phone(None)
 
     def test_clean_text_rejects_non_text_empty_and_oversized(self):
-        for value in (None, 12, "", "   ", "x" * 6):
+        for value in (None, 12):
+            with self.subTest(value=repr(value)), self.assertRaises(TypeError):
+                clean_text(value, max_length=5)
+        for value in ("", "   ", "x" * 6):
             with self.subTest(value=repr(value)), self.assertRaises(ValueError):
                 clean_text(value, max_length=5)
 
