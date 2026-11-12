@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>WA-Bridge AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>WA-Bridge AI</h1>
+      <p>Panel local de asistente y herramientas</p>
+    </div>
+    <span id="system-status" class="status">Comprobando sistema…</span>
+  </header>
+
+  <nav class="tabs" aria-label="Secciones principales">
+    <button class="tab active" data-tab="chat" type="button">Chat IA</button>
+    <button class="tab" data-tab="contacts" type="button">Contactos</button>
+    <button class="tab" data-tab="tasks" type="button">Tareas</button>
+    <button class="tab" data-tab="history" type="button">Historial</button>
+  </nav>
+
+  <main>
+    <section id="tab-chat" class="panel active">
+      <div class="panel-heading">
+        <div>
+          <h2>Asistente</h2>
+          <p id="ai-mode">Intérprete local disponible</p>
+        </div>
+      </div>
+      <div class="notice">
+        Los mensajes se preparan para revisión. WA-Bridge AI no los envía automáticamente ni lee tus chats.
+      </div>
+      <div id="chat-log" class="chat-log" aria-live="polite">
+        <div class="bubble assistant">
+          Soy WA-Bridge AI. Puedo preparar mensajes para contactos guardados, crear tareas y consultar tus listas.
+          <span class="examples">Ejemplos: «prepara un mensaje para Ana diciendo que llego a las 10» · «crear tarea estudiar matemática» · «mostrar contactos»</span>
+        </div>
+      </div>
+      <form id="chat-form" class="chat-form">
+        <label class="sr-only" for="chat-input">Escribe una instrucción</label>
+        <textarea id="chat-input" rows="2" maxlength="1500" placeholder="Escribe una instrucción…" required></textarea>
+        <button id="chat-submit" class="primary" type="submit">Enviar</button>
+      </form>
+      <p class="subtle">La IA externa es opcional. Sin proveedor configurado se utiliza el intérprete local básico.</p>
+    </section>
+
+    <section id="tab-contacts" class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Contactos</h2>
+          <p>Agenda guardada únicamente en este equipo.</p>
+        </div>
+      </div>
+      <form id="contact-form" class="form-row">
+        <label>Nombre<input id="contact-name" maxlength="100" placeholder="Ej. Ana" required></label>
+        <label>Número internacional<input id="contact-phone" inputmode="tel" placeholder="Ej. 5493511234567" required></label>
+        <button class="primary" type="submit">Agregar contacto</button>
+      </form>
+      <p class="subtle">Incluye el código de país. No agregues números sin permiso de sus titulares.</p>
+      <div id="contacts-list" class="item-list"></div>
+    </section>
+
+    <section id="tab-tasks" class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Tareas y recordatorios</h2>
+          <p>Organiza pendientes. Esta versión los guarda; todavía no envía notificaciones automáticas.</p>
+        </div>
+      </div>
+      <form id="task-form" class="form-row">
+        <label class="grow">Tarea<input id="task-title" maxlength="300" placeholder="Ej. Estudiar matemática" required></label>
+        <label>Fecha / nota (opcional)<input id="task-due" maxlength="100" placeholder="Ej. mañana a las 18"></label>
+        <button class="primary" type="submit">Guardar tarea</button>
+      </form>
+      <div id="tasks-list" class="item-list"></div>
+    </section>
+
+    <section id="tab-history" class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Historial</h2>
+          <p>Registro local de las operaciones realizadas desde esta aplicación.</p>
+        </div>
+        <button id="refresh-history" class="secondary" type="button">Actualizar</button>
+      </div>
+      <div id="history-list" class="item-list"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="provider-status">Comprobando configuración de IA…</span>
+    <span>WA-Bridge AI · ejecución local</span>
+  </footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
