@@ -60,15 +60,19 @@ try {
     Check-Result "Servicio Ollama" $false "No responde en 127.0.0.1:11434. Abre Ollama y vuelve a probar."
 }
 
-try {
-    $listeners = @(Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction Stop)
-    Check-Result "Puerto 5000 libre" ($listeners.Count -eq 0) "La aplicación necesita el puerto 5000 disponible."
-} catch {
-    if ($_.Exception.Message -match "No se encontraron|No hay objetos") {
+$tcpCommand = Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue
+if ($tcpCommand) {
+    $listeners = @(Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue)
+    if ($listeners.Count -eq 0) {
         Check-Result "Puerto 5000 libre" $true "No hay un proceso escuchando."
     } else {
-        Check-Result "Puerto 5000 libre" $false "No se pudo comprobar el puerto: $($_.Exception.Message)"
+        $owners = ($listeners | Select-Object -ExpandProperty OwningProcess -Unique) -join ", "
+        Check-Result "Puerto 5000 libre" $false "Está ocupado. PID detectado: $owners. No se cerró ningún proceso."
     }
+} else {
+    $netstat = netstat -ano -p tcp 2>$null | Out-String
+    $portInUse = $netstat -match "(?m)^\s*TCP\s+\S+:5000\s+\S+\s+LISTENING\s+"
+    Check-Result "Puerto 5000 libre" (-not $portInUse) "Comprobación mediante netstat."
 }
 
 Write-Host ""
