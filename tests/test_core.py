@@ -5,6 +5,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
@@ -287,7 +288,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(result, 0)
         backup_files = list((backup_root / "backups").glob("wa_bridge_*.db"))
         self.assertEqual(len(backup_files), 1)
-        with sqlite3.connect(backup_files[0]) as connection:
+        with closing(sqlite3.connect(backup_files[0])) as connection:
             self.assertEqual(connection.execute("PRAGMA integrity_check").fetchone()[0], "ok")
             tables = {
                 row[0] for row in connection.execute(
