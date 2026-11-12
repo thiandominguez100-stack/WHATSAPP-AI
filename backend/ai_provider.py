@@ -10,14 +10,16 @@ import os
 import urllib.error
 import urllib.request
 from typing import Any
+from urllib.parse import urlsplit
 
 ALLOWED_INTENTS = {"draft_message", "create_task", "list_contacts", "list_tasks", "help", "unknown"}
 
 
 def _endpoint(base_url: str) -> str:
     base = base_url.strip().rstrip("/")
-    if not (base.startswith("https://") or base.startswith("http://127.0.0.1")
-            or base.startswith("http://localhost")):
+    parsed = urlsplit(base)
+    is_local_http = parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost"}
+    if parsed.scheme != "https" and not is_local_http:
         raise ValueError("AI_BASE_URL debe usar HTTPS o un endpoint local.")
     if base.endswith("/chat/completions"):
         return base
