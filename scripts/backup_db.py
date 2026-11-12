@@ -43,8 +43,9 @@ def main() -> int:
     created = False
 
     try:
-        with closing(sqlite3.connect(source, timeout=10)) as src:
-            with closing(sqlite3.connect(destination)) as dst:
+        with closing(sqlite3.connect(source, timeout=10)) as src, closing(
+            sqlite3.connect(destination)
+        ) as dst:
                 created = True
                 src.backup(dst)
                 check = dst.execute("PRAGMA integrity_check").fetchone()
