@@ -65,6 +65,18 @@ python run.py
 
 También puedes escribir `crear tarea estudiar matemática` o administrar tareas desde la pestaña correspondiente.
 
+## Configurar un proveedor de IA (opcional)
+
+La aplicación incluye un intérprete local básico. Para usar un modelo externo compatible con la API de Chat Completions:
+
+1. Copia `.env.example` a `.env`.
+2. Completa `AI_BASE_URL` con la URL base del proveedor (por ejemplo, el endpoint base que termina en `/v1`).
+3. Completa `AI_MODEL` con el identificador exacto del modelo.
+4. Completa `AI_API_KEY` con la clave obtenida directamente del proveedor, si la requiere.
+5. Reinicia la aplicación.
+
+El proveedor debe ser compatible con el formato OpenAI Chat Completions. La disponibilidad gratuita, los límites y las condiciones dependen del proveedor; este proyecto no incluye claves ni garantiza una cuota gratuita. Se aceptan URLs HTTPS y endpoints locales en `localhost`. Nunca publiques tu archivo `.env`.
+
 ## Privacidad y seguridad
 
 - La base SQLite se guarda en `data/wa_bridge.db` en el equipo donde corre el servidor.
