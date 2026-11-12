@@ -21,6 +21,7 @@
     <button class="tab active" data-tab="chat" type="button">Chat IA</button>
     <button class="tab" data-tab="contacts" type="button">Contactos</button>
     <button class="tab" data-tab="tasks" type="button">Tareas</button>
+    <button class="tab" data-tab="drafts" type="button">Borradores</button>
     <button class="tab" data-tab="history" type="button">Historial</button>
   </nav>
 
@@ -78,6 +79,17 @@
         <button class="primary" type="submit">Guardar tarea</button>
       </form>
       <div id="tasks-list" class="item-list"></div>
+    </section>
+
+    <section id="tab-drafts" class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Borradores guardados</h2>
+          <p>Mensajes preparados anteriormente. Abrir WhatsApp no significa que se hayan enviado.</p>
+        </div>
+        <button id="refresh-drafts" class="secondary" type="button">Actualizar</button>
+      </div>
+      <div id="drafts-list" class="item-list"></div>
     </section>
 
     <section id="tab-history" class="panel">
