@@ -9,6 +9,9 @@ venv/
 data/*.db
 data/*.sqlite3
 *.log
+backups/
+*.db-wal
+*.db-shm
 
 # Editors / OS
 .vscode/
