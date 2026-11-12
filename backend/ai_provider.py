@@ -5,6 +5,7 @@ is validated and never executes arbitrary code or tools.
 """
 from __future__ import annotations
 
+import http.client
 import json
 import os
 import urllib.error
@@ -103,6 +104,6 @@ def interpret_with_provider(user_text: str) -> dict[str, Any] | None:
             "due_text": string_field("due_text", 100),
         }
     except (KeyError, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError,
-            urllib.error.URLError, TimeoutError, OSError):
+            urllib.error.URLError, http.client.HTTPException, TimeoutError, OSError):
         # The local parser remains available if a provider is unavailable or malformed.
         return None
