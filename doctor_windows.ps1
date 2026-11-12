@@ -60,19 +60,52 @@ try {
     Check-Result "Servicio Ollama" $false "No responde en 127.0.0.1:11434. Abre Ollama y vuelve a probar."
 }
 
-$tcpCommand = Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue
-if ($tcpCommand) {
-    $listeners = @(Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue)
-    if ($listeners.Count -eq 0) {
-        Check-Result "Puerto 5000 libre" $true "No hay un proceso escuchando."
-    } else {
-        $owners = ($listeners | Select-Object -ExpandProperty OwningProcess -Unique) -join ", "
-        Check-Result "Puerto 5000 libre" $false "Está ocupado. PID detectado: $owners. No se cerró ningún proceso."
-    }
+$portToCheck = 5000
+if ($env:PORT -match '^\d+
+
+Write-Host ""
+if ($script:failed) {
+    Write-Host "Diagnóstico terminado: hay requisitos pendientes. Revisa las líneas [FALTA]." -ForegroundColor Yellow
+    exit 1
 } else {
-    $netstat = netstat -ano -p tcp 2>$null | Out-String
-    $portInUse = $netstat -match "(?m)^\s*TCP\s+\S+:5000\s+\S+\s+LISTENING\s+"
-    Check-Result "Puerto 5000 libre" (-not $portInUse) "Comprobación mediante netstat."
+    Write-Host "Diagnóstico terminado: todas las comprobaciones pasaron." -ForegroundColor Green
+    exit 0
+}
+) {
+    $portToCheck = [int]$env:PORT
+} elseif (Test-Path $envFile) {
+    $portLine = Select-String -Path $envFile -Pattern '^\s*PORT\s*=\s*(\d+)\s*
+
+Write-Host ""
+if ($script:failed) {
+    Write-Host "Diagnóstico terminado: hay requisitos pendientes. Revisa las líneas [FALTA]." -ForegroundColor Yellow
+    exit 1
+} else {
+    Write-Host "Diagnóstico terminado: todas las comprobaciones pasaron." -ForegroundColor Green
+    exit 0
+}
+ | Select-Object -First 1
+    if ($portLine -and $portLine.Matches[0].Groups[1].Success) {
+        $portToCheck = [int]$portLine.Matches[0].Groups[1].Value
+    }
+}
+if ($portToCheck -lt 1 -or $portToCheck -gt 65535) {
+    Check-Result "Puerto configurado" $false "PORT debe estar entre 1 y 65535."
+} else {
+    $tcpCommand = Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue
+    if ($tcpCommand) {
+        $listeners = @(Get-NetTCPConnection -LocalPort $portToCheck -State Listen -ErrorAction SilentlyContinue)
+        if ($listeners.Count -eq 0) {
+            Check-Result "Puerto $portToCheck libre" $true "No hay un proceso escuchando."
+        } else {
+            $owners = ($listeners | Select-Object -ExpandProperty OwningProcess -Unique) -join ", "
+            Check-Result "Puerto $portToCheck libre" $false "Está ocupado. PID detectado: $owners. No se cerró ningún proceso."
+        }
+    } else {
+        $netstat = netstat -ano -p tcp 2>$null | Out-String
+        $portInUse = $netstat -match "(?m)^\s*TCP\s+\S+:$portToCheck\s+\S+\s+LISTENING\s+"
+        Check-Result "Puerto $portToCheck libre" (-not $portInUse) "Comprobación mediante netstat."
+    }
 }
 
 Write-Host ""
