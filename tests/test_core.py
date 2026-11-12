@@ -11,7 +11,7 @@ from unittest.mock import patch
 from backend.agent import _find_contact
 from backend.ai_provider import _endpoint, interpret_with_provider
 from backend.app import create_app
-from backend.database import db_session
+from backend.database import db_session, database_path
 from backend.security import clean_text, normalize_phone
 from backend.whatsapp import build_whatsapp_link
 from scripts import backup_db
@@ -42,6 +42,13 @@ class CoreTests(unittest.TestCase):
 
     def add_contact(self, name="Ana", phone="+54 9 351 123 4567"):
         return self.client.post("/api/contacts", json={"name": name, "phone": phone})
+
+    def test_empty_database_environment_uses_default_path(self):
+        with patch.dict(os.environ, {"WA_BRIDGE_DB": ""}), patch(
+            "backend.database.PROJECT_ROOT", Path(self.temp_dir.name)
+        ):
+            path = database_path()
+        self.assertEqual(path, Path(self.temp_dir.name) / "data" / "wa_bridge.db")
 
     def test_normalize_phone(self):
         self.assertEqual(normalize_phone("+54 9 351 123-4567"), "5493511234567")
