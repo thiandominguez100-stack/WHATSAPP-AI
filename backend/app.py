@@ -201,7 +201,7 @@ def create_app() -> Flask:
                 ).fetchone()
                 connection.commit()
             return jsonify({"task": dict(row)}), 201
-        except ValueError as exc:
+        except (TypeError, ValueError) as exc:
             return jsonify({"error": str(exc)}), 400
 
     @app.patch("/api/tasks/<int:task_id>")
