@@ -11,8 +11,8 @@ from urllib.parse import urlsplit
 from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, render_template, request
 
-from .ai_provider import _endpoint
 from .agent import handle_message
+from .ai_provider import _endpoint
 from .database import db_session, init_db
 from .security import clean_text, normalize_phone
 
