@@ -39,5 +39,5 @@ if __name__ == "__main__":
     except ValueError as exc:
         print(f"Configuración no válida: {exc}", file=sys.stderr)
         raise SystemExit(2)
-    print(f"WA-Bridge AI disponible solo en este equipo: http://127.0.0.1:{port}")
+    print(f"WA-Bridge AI disponible solo en este equipo: http://localhost:{port}")
     app.run(host=host, port=port, debug=False, threaded=True)
