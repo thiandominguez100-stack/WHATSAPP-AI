@@ -109,6 +109,12 @@ class CoreTests(unittest.TestCase):
             )
         self.assertEqual(response.get_json()["kind"], "draft")
 
+    def test_reminder_command_without_task_keyword(self):
+        response = self.client.post("/api/chat", json={"message": "recordame estudiar inglés"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["kind"], "task")
+        self.assertEqual(response.get_json()["task"]["title"], "estudiar inglés")
+
     def test_create_task_and_list_tasks(self):
         response = self.client.post(
             "/api/chat", json={"message": "crear tarea estudiar matemática"}
@@ -202,6 +208,21 @@ class CoreTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    def test_reject_cross_site_fetch_metadata(self):
+        response = self.client.post(
+            "/api/contacts",
+            json={"name": "Ana", "phone": "5493511234567"},
+            headers={"Sec-Fetch-Site": "cross-site"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_reject_non_loopback_client(self):
+        response = self.client.get(
+            "/api/health",
+            environ_base={"REMOTE_ADDR": "192.0.2.10"},
+        )
+        self.assertEqual(response.status_code, 403)
+
     def test_allow_same_origin_mutation(self):
         response = self.client.post(
             "/api/contacts",
@@ -249,6 +270,7 @@ class CoreTests(unittest.TestCase):
             response = self.client.get("/api/settings")
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.get_json()["provider_is_local"])
+        self.assertFalse(response.get_json()["provider_configured"])
 
     def test_backup_creates_integrity_checked_copy(self):
         backup_root = Path(self.temp_dir.name) / "project"
